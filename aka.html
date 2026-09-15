@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mfumo wa Usimamizi wa Stoo na Mauzo</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* KODI YA KUFICHA BADGE AU MANENO YA NETLIFY */
+    .netlify-badge, 
+    [a*="netlify"], 
+    iframe[src*="netlify"],
+    div[class*="netlify"],
+    a[href*="netlify"],
+    [class*="netlify-badge"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      height: 0 !important;
+      width: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
+    @keyframes discoLights {
+      0% { color: #ff0055; text-shadow: 0 0 8px #ff0055; }
+      25% { color: #00e5ff; text-shadow: 0 0 8px #00e5ff; }
+      50% { color: #39ff14; text-shadow: 0 0 8px #39ff14; }
+      75% { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+      100% { color: #ffea00; text-shadow: 0 0 8px #ffea00; }
+    }
+    .disco-brand {
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      animation: discoLights 1.2s infinite alternate ease-in-out;
+    }
+    .nav-item.active {
+      color: #059669;
+    }
+    .nav-item.active i {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-gray-800 pb-24 min-h-screen">
+
+  <!-- HOME LOCK SCREEN OVERLAY WITH LOGO BACKGROUND -->
+  <div id="homeLockOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4">
+    <div class="relative w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 overflow-hidden bg-white/95 border border-white/20"
+         style="background-image: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url('1000001547_2.png'); background-size: cover; background-position: center;">
+      
+      <!-- Logo Header Container -->
+      <div class="w-20 h-20 bg-emerald-100/80 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner border border-emerald-200">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      
+      <div>
+        <h2 class="text-xl font-black text-gray-800 tracking-wide">KUWASHA MFUMO</h2>
+        <p class="text-xs text-gray-600 font-medium mt-1">Ingiza Nenosiri (Password) ili kuingia kwenye mfumo wa biashara</p>
+      </div>
+      
+      <form onsubmit="unlockApp(event)" class="space-y-3 relative z-10">
+        <input type="password" id="lockPasswordInput" placeholder="NENOSIRI" required class="w-full bg-white/80 border border-gray-300 p-3 text-center text-lg font-bold tracking-widest rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none uppercase shadow-sm">
+        <p id="lockErrorMsg" class="text-xs text-red-500 font-bold hidden">❌ Nenosiri siyo sahihi!</p>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 text-sm rounded-xl shadow-lg transition active:scale-95">
+          Fungua Mfumo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Top Header Component -->
+  <header class="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm px-4 py-3">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <!-- LOGO MPYA YA KG YENYE RANGI YA TOFAUTI NA YA KUVUTIA -->
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-teal-600 via-emerald-500 to-cyan-400 text-white flex items-center justify-center font-black text-base shadow-md border-2 border-white tracking-widest">
+          KG
+        </div>
+        <div>
+          <span class="disco-brand text-base block leading-tight">KIHAMPA JR</span>
+          <span class="text-xs text-gray-400 font-medium">Softsamic UI • Stoo & Mauzo</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button onclick="fetchDataFromSupabase()" class="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-100" title="Refresh Data">
+          <i class="fa-solid fa-rotate text-sm"></i>
+        </button>
+        <button onclick="showPage('resetPage')" class="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-red-600 hover:bg-red-100" title="Kuanzisha Mfumo Upya">
+          <i class="fa-solid fa-rotate-left text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 pt-4 space-y-5">
+    
+    <!-- 1. HOME PAGE -->
+    <section id="homePage" class="page-section space-y-4">
+      <div class="bg-emerald-950 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <div class="grid grid-cols-2 gap-4 relative z-10">
+          <div class="border-r border-emerald-800/60 pr-2">
+            <div class="flex items-center space-x-1 text-emerald-400 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-chart-line"></i> <span>+100%</span>
+            </div>
+            <p id="homeRevenueText" class="text-xl font-extrabold tracking-tight">TSh 0</p>
+            <p class="text-xs text-emerald-200/70 mt-0.5">Mauzo ya Siku</p>
+          </div>
+          <div class="pl-2">
+            <div class="flex items-center space-x-1 text-emerald-400 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-chart-line"></i> <span>+100%</span>
+            </div>
+            <p id="homeProfitText" class="text-xl font-extrabold tracking-tight">TSh 0</p>
+            <p class="text-xs text-emerald-200/70 mt-0.5">Faida ya Siku</p>
+          </div>
+        </div>
+      </div>
+
+      <div onclick="showPage('ordersPage')" class="bg-amber-500 text-white rounded-xl p-3.5 flex justify-between items-center cursor-pointer shadow-sm active:scale-[0.99] transition">
+        <div class="flex items-center space-x-3">
+          <i class="fa-solid fa-box-open text-lg"></i>
+          <span id="pendingOrdersBannerText" class="text-sm font-semibold">0 Oda hazijachukuliwa</span>
+        </div>
+        <i class="fa-solid fa-chevron-right text-xs opacity-80"></i>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="showPage('recordSalePage')" class="p-4 bg-emerald-100/70 rounded-2xl border border-emerald-200/50 flex flex-col items-center text-center space-y-2 hover:bg-emerald-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-700 flex items-center justify-center">
+            <i class="fa-solid fa-square-check text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Rekodi Mauzo</span>
+        </button>
+
+        <button onclick="showPage('addStockPage')" class="p-4 bg-purple-100/70 rounded-2xl border border-purple-200/50 flex flex-col items-center text-center space-y-2 hover:bg-purple-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-700 flex items-center justify-center">
+            <i class="fa-solid fa-plus text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Ongeza Bidhaa</span>
+        </button>
+
+        <button onclick="showPage('financePage')" class="p-4 bg-sky-100/70 rounded-2xl border border-sky-200/50 flex flex-col items-center text-center space-y-2 hover:bg-sky-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-700 flex items-center justify-center">
+            <i class="fa-solid fa-file-invoice text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Hesabu za Pesa</span>
+        </button>
+
+        <button onclick="showPage('stockStatusPage')" class="p-4 bg-teal-100/70 rounded-2xl border border-teal-200/50 flex flex-col items-center text-center space-y-2 hover:bg-teal-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-700 flex items-center justify-center">
+            <i class="fa-solid fa-boxes-stacked text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Simamia Stoo</span>
+        </button>
+
+        <button onclick="showPage('addOrderPage')" class="p-4 bg-orange-100/70 rounded-2xl border border-orange-200/50 flex flex-col items-center text-center space-y-2 hover:bg-orange-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-700 flex items-center justify-center">
+            <i class="fa-solid fa-user-tag text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Weka Oda</span>
+        </button>
+
+        <button onclick="showPage('customersPage')" class="p-4 bg-blue-100/70 rounded-2xl border border-blue-200/50 flex flex-col items-center text-center space-y-2 hover:bg-blue-100 transition">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-700 flex items-center justify-center">
+            <i class="fa-solid fa-address-book text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Wateja & Namba</span>
+        </button>
+
+        <button onclick="showPage('ideasPage')" class="p-4 bg-indigo-100/70 rounded-2xl border border-indigo-200/50 flex flex-col items-center text-center space-y-2 hover:bg-indigo-100 transition col-span-2">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-700 flex items-center justify-center">
+            <i class="fa-solid fa-lightbulb text-lg"></i>
+          </div>
+          <span class="text-xs font-bold text-gray-800">Mawazo & Miradi</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. HESABU ZA PESA PAGE -->
+    <section id="financePage" class="page-section hidden space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-lg font-bold text-gray-800">Ripoti na Hesabu za Pesa</h2>
+        <div class="space-y-3">
+          <div class="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100">
+            <span class="text-xs text-gray-500 uppercase font-semibold">Jumla ya Mauzo</span>
+            <p id="totalRevenue" class="text-xl font-extrabold text-blue-700 mt-0.5">TSh 0</p>
+          </div>
+          <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-100">
+            <span class="text-xs text-gray-500 uppercase font-semibold">Akaunti ya Mtaji</span>
+            <p id="totalCapital" class="text-xl font-extrabold text-amber-700 mt-0.5">TSh 0</p>
+          </div>
+          <div class="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100">
+            <span class="text-xs text-gray-500 uppercase font-semibold">Akaunti ya Faida</span>
+            <p id="totalProfit" class="text-xl font-extrabold text-emerald-700 mt-0.5">TSh 0</p>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Grafu ya Mauzo</h3>
+          <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+            <canvas id="salesChart" class="w-full h-48"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. WEKA STOO PAGE -->
+    <section id="addStockPage" class="page-section hidden">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-lg font-bold text-gray-800">Kuingiza Mzigo Mpya Stoo</h2>
+        <form id="addProductForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Jina la Bidhaa</label>
+            <input type="text" id="prodName" placeholder="Mfano: Katoni ya Maji" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Bei Kununua (Jumla)</label>
+              <input type="number" id="prodCostPrice" placeholder="4800" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Idadi ya Vipande</label>
+              <input type="number" id="prodTotalPieces" placeholder="24" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Bei Kuuzia Kipande 1</label>
+            <input type="number" id="prodSellingPrice" placeholder="500" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <button type="submit" id="submitStockBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 text-sm rounded-xl shadow transition mt-2">Hifadhi Mzigo Stoo</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 4. REKODI MAUZO PAGE -->
+    <section id="recordSalePage" class="page-section hidden">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-lg font-bold text-gray-800">Rekodi Mauzo ya Kila Siku</h2>
+        <form id="addSaleForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Chagua Bidhaa</label>
+            <select id="saleSelectProduct" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="">-- Chagua Bidhaa --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Idadi Iliyouzwa</label>
+            <input type="number" id="saleQuantity" min="1" placeholder="1" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <button type="submit" id="submitSaleBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 text-sm rounded-xl shadow transition mt-2">Hifadhi Mauzo</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 5. HALI YA STOO PAGE -->
+    <section id="stockStatusPage" class="page-section hidden space-y-3">
+      <h2 class="text-lg font-bold text-gray-800 px-1">Hali ya Stoo (Stock Status)</h2>
+      <div id="stockList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- 6. WEKA ODA PAGE -->
+    <section id="addOrderPage" class="page-section hidden">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-lg font-bold text-gray-800">➕ Rekodi Oda Mpya</h2>
+        <form id="addOrderForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Jina la Mteja</label>
+            <input type="text" id="customerName" placeholder="Ali / Asha" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Namba ya Simu (Weka '0' Kama Hana Namba)</label>
+            <input type="text" id="customerPhone" placeholder="0712345678 au 0" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-gray-600">Sehemu / Mtaa (Kijiji & Mkoa)</label>
+              <button type="button" onclick="getCurrentLocation()" class="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-semibold hover:bg-blue-100 border border-blue-200 flex items-center gap-1">
+                <i class="fa-solid fa-location-crosshairs"></i> Chukua Eneo Langu
+              </button>
+            </div>
+            <input type="text" id="customerLocation" placeholder="Kijiji, Mtaa, Mkoa au Bonyeza Kitufe cha Juu" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+            <input type="hidden" id="customerCoords" value="">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Maelezo ya Kitu Anachotaka</label>
+            <input type="text" id="orderDetails" placeholder="Chupa 5 za Maji" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Tarehe ya Kumfikishia</label>
+            <input type="date" id="orderDate" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+          </div>
+          <button type="submit" id="submitOrderBtn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 text-sm rounded-xl shadow transition mt-2">Hifadhi Oda</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 7. ORODHA YA ODA PAGE -->
+    <section id="ordersPage" class="page-section hidden space-y-3">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-lg font-bold text-gray-800">📌 Orodha ya Oda</h2>
+        <button onclick="showPage('addOrderPage')" class="text-xs bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 py-1.5 rounded-lg shadow">
+          + Oda Mpya
+        </button>
+      </div>
+      <div id="ordersList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- 8. HISTORIA YA MAUZO PAGE -->
+    <section id="salesHistoryPage" class="page-section hidden space-y-3">
+      <h2 class="text-lg font-bold text-gray-800 px-1">Historia ya Mauzo</h2>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider border-b">
+                <th class="p-3">Tarehe</th>
+                <th class="p-3">Bidhaa</th>
+                <th class="p-3">Idadi</th>
+                <th class="p-3">Mauzo</th>
+                <th class="p-3">Faida</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody" class="text-xs divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. UKURASA WATEJA -->
+    <section id="customersPage" class="page-section hidden space-y-3">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-lg font-bold text-gray-800">📖 Kitabu cha Wateja</h2>
+        <span id="customerCountBadge" class="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-full">0 Wateja</span>
+      </div>
+      <div class="relative">
+        <input type="text" id="searchCustomerInput" onkeyup="filterCustomers()" placeholder="🔍 Tafuta kwa jina au namba..." class="w-full bg-white border border-gray-200 p-2.5 pl-9 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+      </div>
+      <div id="customersList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- 11. MAWAZO YA MIRADI NA VITU VYA KUNUNUA -->
+    <section id="ideasPage" class="page-section hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-lg font-bold text-gray-800">💡 Kumbukumbu ya Mawazo na Vitu vya Kununua</h2>
+        <form id="addIdeaForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Jina la Wazo au Kitu cha Kununua</label>
+            <input type="text" id="ideaTitle" placeholder="Mfano: Kununua Shelfi Mpya ya Stoo" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Makadirio ya Bei (TSh) - Sio Lazima</label>
+            <input type="number" id="ideaCost" placeholder="Mfano: 150000" class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Maelezo Ziada</label>
+            <textarea id="ideaDetails" placeholder="Maelezo zaidi kuhusu wazo hili..." rows="2" class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+          </div>
+          <button type="submit" id="submitIdeaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 text-sm rounded-xl shadow transition mt-2">Hifadhi Wazo</button>
+        </form>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-sm font-bold text-gray-700 px-1">Orodha ya Mawazo / Vitu Vinavyosubiri Kununuliwa</h3>
+        <div id="ideasList" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- 12. UKURASA WA KUANZISHA MFUMO UPYA (RESET PAGE) -->
+    <section id="resetPage" class="page-section hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100 space-y-4">
+        <div class="text-center space-y-2">
+          <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <h2 class="text-lg font-bold text-gray-800">Anzisha Mfumo Upya (Reset)</h2>
+          <p class="text-xs text-gray-500">Kitendo hiki kitafuta data zote za **Bidhaa, Mauzo, Oda na Mawazo**. Orodha na namba za **Wateja hazitafutwa**.</p>
+        </div>
+        
+        <form id="resetForm" onsubmit="handleSystemReset(event)" class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Ingiza Nenosiri (Password)</label>
+            <input type="password" id="resetPassword" placeholder="****" required class="w-full bg-gray-50 border border-gray-200 p-2.5 text-sm rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-center font-bold tracking-widest">
+          </div>
+          <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 text-sm rounded-xl shadow transition">
+            Futa na Kuanzisha Upya
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-1 z-50">
+    <div class="max-w-md mx-auto flex justify-between items-center text-center">
+      <button onclick="showPage('homePage')" id="nav-homePage" class="nav-item active flex-1 flex flex-col items-center text-gray-400">
+        <i class="fa-solid fa-house text-base mb-0.5"></i>
+        <span class="text-[9px] font-semibold">Nyumbani</span>
+      </button>
+      <button onclick="showPage('salesHistoryPage')" id="nav-salesHistoryPage" class="nav-item flex-1 flex flex-col items-center text-gray-400">
+        <i class="fa-solid fa-receipt text-base mb-0.5"></i>
+        <span class="text-[9px] font-semibold">Mauzo</span>
+      </button>
+
+      <button onclick="showPage('customersPage')" id="nav-customersPage" class="nav-item flex-1 flex flex-col items-center text-gray-400">
+        <i class="fa-solid fa-address-book text-base mb-0.5"></i>
+        <span class="text-[9px] font-semibold">Wateja</span>
+      </button>
+      <button onclick="showPage('financePage')" id="nav-financePage" class="nav-item flex-1 flex flex-col items-center text-gray-400">
+        <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+        <span class="text-[9px] font-semibold">Ripoti</span>
+      </button>
+      <button onclick="showPage('ordersPage')" id="nav-ordersPage" class="nav-item flex-1 flex flex-col items-center text-gray-400">
+        <i class="fa-solid fa-list-check text-base mb-0.5"></i>
+        <span class="text-[9px] font-semibold">Oda</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Logic Script & Supabase Integration -->
+  <script>
+    // SCRIPT YA KUONDOA BADGE YA NETLIFY AUTOMATICALLY
+    setInterval(function() {
+      const netlifyBadges = document.querySelectorAll('.netlify-badge, [a*="netlify"], iframe[src*="netlify"], div[class*="netlify"], a[href*="netlify"], [class*="netlify-badge"]');
+      netlifyBadges.forEach(el => el.remove());
+    }, 100);
+
+    // TAARIFA ZA SUPABASE
+    const SUPABASE_URL = "https://ifqwfedfqvomdhgmlnzi.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_4wvcKdr-VoO3fJ3surHRoA_T_rzYFWO";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let products = {};
+    let sales = {};
+    let orders = {};
+    let customers = {};
+    let ideas = {};
+
+    const addProductForm = document.getElementById('addProductForm');
+    const addSaleForm = document.getElementById('addSaleForm');
+    const addOrderForm = document.getElementById('addOrderForm');
+    const addIdeaForm = document.getElementById('addIdeaForm');
+    
+    const saleSelectProduct = document.getElementById('saleSelectProduct');
+    const stockList = document.getElementById('stockList');
+    const ordersList = document.getElementById('ordersList');
+    const customersList = document.getElementById('customersList');
+    const ideasList = document.getElementById('ideasList');
+    const salesTableBody = document.getElementById('salesTableBody');
+
+    const homeRevenueText = document.getElementById('homeRevenueText');
+    const homeProfitText = document.getElementById('homeProfitText');
+    const pendingOrdersBannerText = document.getElementById('pendingOrdersBannerText');
+    const customerCountBadge = document.getElementById('customerCountBadge');
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    const totalCapitalEl = document.getElementById('totalCapital');
+    const totalProfitEl = document.getElementById('totalProfit');
+
+    // HOME LOCK SCREEN LOGIC (WIDO 1998)
+    function unlockApp(e) {
+      e.preventDefault();
+      const pass = document.getElementById('lockPasswordInput').value.trim();
+      const err = document.getElementById('lockErrorMsg');
+      
+      if (pass === 'WIDO 1998') {
+        document.getElementById('homeLockOverlay').classList.add('hidden');
+        err.classList.add('hidden');
+      } else {
+        err.classList.remove('hidden');
+        document.getElementById('lockPasswordInput').value = '';
+      }
+    }
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page-section').forEach(page => page.classList.add('hidden'));
+      document.getElementById(pageId).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+      const activeNav = document.getElementById(`nav-${pageId}`);
+      if (activeNav) activeNav.classList.add('active');
+    }
+
+    let chartContext = document.getElementById('salesChart').getContext('2d');
+    let salesChart;
+
+    function initChart() {
+      salesChart = new Chart(chartContext, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Mauzo (TSh)',
+            data: [],
+            borderColor: '#059669',
+            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function getCurrentLocation() {
+      const locInput = document.getElementById('customerLocation');
+      const coordsInput = document.getElementById('customerCoords');
+
+      if ("geolocation" in navigator) {
+        locInput.value = "Inatafuta eneo ulipo...";
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          coordsInput.value = `${lat},${lon}`;
+          
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await response.json();
+            if (data && data.address) {
+              const village = data.address.village || data.address.suburb || data.address.town || data.address.city || "";
+              const state = data.address.state || data.address.region || "";
+              const country = data.address.country || "";
+              locInput.value = `${village ? village + ', ' : ''}${state ? state + ', ' : ''}${country}`;
+            } else {
+              locInput.value = `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            }
+          } catch (err) {
+            locInput.value = `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          }
+        }, (error) => {
+          alert("Tafadhali ruhusu simu yako kutumia Location/GPS.");
+          locInput.value = "";
+        });
+      } else {
+        alert("Simu yako haiauni Geolocation.");
+      }
+    }
+
+    // CHUKUA DATA ZOTE KUTOKA SUPABASE DATABASE
+    async function fetchDataFromSupabase() {
+      try {
+        const [pRes, sRes, oRes, cRes, iRes] = await Promise.all([
+          _supabase.from('products').select('*'),
+          _supabase.from('sales').select('*'),
+          _supabase.from('orders').select('*'),
+          _supabase.from('customers').select('*'),
+          _supabase.from('ideas').select('*')
+        ]);
+
+        if (pRes.data) {
+          products = {};
+          pRes.data.forEach(p => {
+            products[p.id] = {
+              id: p.id, name: p.name, costPrice: p.cost_price, totalPieces: p.total_pieces, remainingPieces: p.remaining_pieces, sellingPrice: p.selling_price, costPerPiece: p.cost_per_piece
+            };
+          });
+        }
+
+        if (sRes.data) {
+          sales = {};
+          sRes.data.forEach(s => {
+            sales[s.id] = { id: s.id, productName: s.product_name, qty: s.qty, revenue: s.revenue, capital: s.capital, profit: s.profit, date: s.date };
+          });
+        }
+
+        if (oRes.data) {
+          orders = {};
+          oRes.data.forEach(o => {
+            orders[o.id] = { id: o.id, customerName: o.customer_name, customerPhone: o.customer_phone, location: o.location, coords: o.coords, details: o.details, date: o.date };
+          });
+        }
+
+        if (cRes.data) {
+          customers = {};
+          cRes.data.forEach(c => {
+            customers[c.id] = { id: c.id, name: c.name, phone: c.phone, location: c.location, coords: c.coords, isInactive: c.is_inactive };
+          });
+        }
+
+        if (iRes.data) {
+          ideas = {};
+          iRes.data.forEach(i => {
+            ideas[i.id] = { id: i.id, title: i.title, cost: i.cost, details: i.details, date: i.date };
+          });
+        }
+
+        renderUI();
+      } catch (err) {
+        console.error("Kosa wakati wa kuchukua data Supabase:", err);
+      }
+    }
+
+    // RESET SYSTEM (PASSWORD: 1998)
+    async function handleSystemReset(e) {
+      e.preventDefault();
+      const inputPass = document.getElementById('resetPassword').value.trim();
+      
+      if (inputPass !== '1998') {
+        alert('❌ Nenosiri siyo sahihi! Jaribu tena.');
+        document.getElementById('resetPassword').value = '';
+        return;
+      }
+
+      const confirmAction = confirm("⚠️ JE, UNA UHAKIKA WA KUANZA UPYA?\n\nData zote za Mauzo, Stoo, Oda na Mawazo zitafutwa. Namba na taarifa za wateja HAZITAFUTWA!");
+      if (confirmAction) {
+        try {
+          await Promise.all([
+            _supabase.from('products').delete().neq('id', '000'),
+            _supabase.from('sales').delete().neq('id', '000'),
+            _supabase.from('orders').delete().neq('id', '000'),
+            _supabase.from('ideas').delete().neq('id', '000')
+          ]);
+
+          products = {}; sales = {}; orders = {}; ideas = {};
+          document.getElementById('resetPassword').value = '';
+          alert("✅ Mfumo umesafishwa kikamilifu! Namba za wateja zimehifadhiwa salama Supabase.");
+          await fetchDataFromSupabase();
+          showPage('homePage');
+        } catch (err) {
+          alert("Kuna kosa limetokea wakati wa kusafisha mfumo.");
+        }
+      }
+    }
+
+    addProductForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitStockBtn');
+      btn.disabled = true;
+      btn.innerText = "Inahifadhi...";
+
+      const name = document.getElementById('prodName').value;
+      const costPrice = parseFloat(document.getElementById('prodCostPrice').value);
+      const totalPieces = parseInt(document.getElementById('prodTotalPieces').value);
+      const sellingPrice = parseFloat(document.getElementById('prodSellingPrice').value);
+      const id = 'prod_' + Date.now();
+      const costPerPiece = costPrice / totalPieces;
+
+      const { error } = await _supabase.from('products').insert([{
+        id: id, name: name, cost_price: costPrice, total_pieces: totalPieces, remaining_pieces: totalPieces, selling_price: sellingPrice, cost_per_piece: costPerPiece
+      }]);
+
+      btn.disabled = false;
+      btn.innerText = "Hifadhi Mzigo Stoo";
+
+      if (error) {
+        alert("Hitilafu kwenye Supabase: " + error.message);
+        return;
+      }
+
+      addProductForm.reset();
+      await fetchDataFromSupabase();
+      showPage('stockStatusPage');
+    });
+
+    addSaleForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitSaleBtn');
+      btn.disabled = true;
+      btn.innerText = "Inahifadhi...";
+
+      const prodId = saleSelectProduct.value;
+      const qty = parseInt(document.getElementById('saleQuantity').value);
+      const product = products[prodId];
+
+      if (!product) {
+        btn.disabled = false;
+        btn.innerText = "Hifadhi Mauzo";
+        return;
+      }
+
+      if (qty > product.remainingPieces) {
+        alert('Mzigo uliopo stoo hautoshi!');
+        btn.disabled = false;
+        btn.innerText = "Hifadhi Mauzo";
+        return;
+      }
+
+      const revenue = qty * product.sellingPrice;
+      const capital = qty * product.costPerPiece;
+      const profit = revenue - capital;
+      const today = new Date().toISOString().split('T')[0];
+      const newRemaining = product.remainingPieces - qty;
+      const saleId = 'sale_' + Date.now();
+
+      const { error: saleErr } = await _supabase.from('sales').insert([{
+        id: saleId, product_name: product.name, qty: qty, revenue: revenue, capital: capital, profit: profit, date: today
+      }]);
+
+      if (!saleErr) {
+        await _supabase.from('products').update({ remaining_pieces: newRemaining }).eq('id', prodId);
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Hifadhi Mauzo";
+
+      if (saleErr) {
+        alert("Hitilafu kwenye kuingiza mauzo: " + saleErr.message);
+        return;
+      }
+
+      addSaleForm.reset();
+      await fetchDataFromSupabase();
+      showPage('financePage');
+    });
+
+    addOrderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitOrderBtn');
+      btn.disabled = true;
+      btn.innerText = "Inahifadhi...";
+
+      const name = document.getElementById('customerName').value;
+      const phone = document.getElementById('customerPhone').value.trim();
+      const location = document.getElementById('customerLocation').value;
+      const coords = document.getElementById('customerCoords').value;
+      const details = document.getElementById('orderDetails').value;
+      const date = document.getElementById('orderDate').value;
+
+      const orderId = 'order_' + Date.now();
+
+      const { error: orderErr } = await _supabase.from('orders').insert([{
+        id: orderId, customer_name: name, customer_phone: phone, location: location, coords: coords, details: details, date: date
+      }]);
+
+      if (phone !== '0' && phone !== '') {
+        let customerExists = Object.values(customers).some(c => c.phone === phone);
+        if (!customerExists) {
+          const custId = 'cust_' + Date.now();
+          await _supabase.from('customers').insert([{
+            id: custId, name: name, phone: phone, location: location, coords: coords, is_inactive: false
+          }]);
+        }
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Hifadhi Oda";
+
+      if (orderErr) {
+        alert("Hitilafu katika kuhifadhi oda: " + orderErr.message);
+        return;
+      }
+
+      addOrderForm.reset();
+      document.getElementById('customerCoords').value = '';
+      await fetchDataFromSupabase();
+      showPage('ordersPage');
+    });
+
+    addIdeaForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitIdeaBtn');
+      btn.disabled = true;
+      btn.innerText = "Inahifadhi...";
+
+      const title = document.getElementById('ideaTitle').value;
+      const cost = document.getElementById('ideaCost').value;
+      const details = document.getElementById('ideaDetails').value;
+      const ideaId = 'idea_' + Date.now();
+
+      const { error } = await _supabase.from('ideas').insert([{
+        id: ideaId, title: title, cost: cost ? parseFloat(cost) : null, details: details, date: new Date().toLocaleDateString('sw-TZ')
+      }]);
+
+      btn.disabled = false;
+      btn.innerText = "Hifadhi Wazo";
+
+      if (error) {
+        alert("Hitilafu kwenye kuhifadhi wazo: " + error.message);
+        return;
+      }
+
+      addIdeaForm.reset();
+      await fetchDataFromSupabase();
+    });
+
+    async function deleteIdea(ideaId) {
+      if (confirm('Je, umefanikiwa kununua/kutekeleza wazo hili au unataka kulifuta?')) {
+        await _supabase.from('ideas').delete().eq('id', ideaId);
+        await fetchDataFromSupabase();
+      }
+    }
+
+    async function completeOrder(orderId) {
+      if (confirm('Je, umefanikiwa kumhudumia mteja huyu?')) {
+        await _supabase.from('orders').delete().eq('id', orderId);
+        await fetchDataFromSupabase();
+      }
+    }
+
+    async function togglePhoneStatus(customerId) {
+      if (customers[customerId]) {
+        const newStatus = !customers[customerId].isInactive;
+        await _supabase.from('customers').update({ is_inactive: newStatus }).eq('id', customerId);
+        await fetchDataFromSupabase();
+      }
+    }
+
+    // KITUFE CHA KUFUTA MTEJA MOJA KWA MOJA
+    async function deleteCustomer(customerId) {
+      if (confirm('Je, una uhakika wa kufuta namba ya mteja huyu kabisa?')) {
+        await _supabase.from('customers').delete().eq('id', customerId);
+        await fetchDataFromSupabase();
+      }
+    }
+
+    function filterCustomers() {
+      const query = document.getElementById('searchCustomerInput').value.toLowerCase();
+      const filtered = Object.values(customers).filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        c.phone.includes(query) || 
+        c.location.toLowerCase().includes(query)
+      );
+      renderCustomersList(filtered);
+    }
+
+    function renderCustomersList(listToRender) {
+      customersList.innerHTML = '';
+      const custArray = Object.values(customers);
+      customerCountBadge.innerText = `${custArray.length} Wateja`;
+
+      if (listToRender.length === 0) {
+        customersList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Hakuna mteja aliyepatikana.</p>';
+      } else {
+        listToRender.forEach(c => {
+          const mapUrl = c.coords ? `https://www.google.com/maps?q=${c.coords}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.location)}`;
+          const isInactive = c.isInactive || false;
+
+          customersList.innerHTML += `
+            <div class="bg-white p-3.5 rounded-2xl border ${isInactive ? 'border-red-200 bg-red-50/20' : 'border-blue-50'} shadow-sm flex justify-between items-center">
+              <div class="space-y-0.5">
+                <p class="font-bold text-sm text-gray-800">${c.name}</p>
+                <p class="text-xs text-gray-500">📍 ${c.location}</p>
+                <p class="text-xs font-semibold ${isInactive ? 'text-red-500 line-through' : 'text-emerald-600'}">
+                  📞 ${c.phone}
+                </p>
+                <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${isInactive ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}">
+                  ${isInactive ? '⚠️ Haipatikani / Haifanyi kazi' : '✅ Inafanya kazi'}
+                </span>
+              </div>
+              <div class="flex gap-1.5 items-center">
+                <button onclick="togglePhoneStatus('${c.id}')" class="p-2.5 rounded-xl border text-xs font-semibold transition ${isInactive ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'}" title="Badili Hali ya Namba">
+                  <i class="fa-solid ${isInactive ? 'fa-phone' : 'fa-phone-slash'}"></i>
+                </button>
+                <a href="${mapUrl}" target="_blank" class="bg-blue-50 text-blue-600 p-2.5 rounded-xl border border-blue-100 inline-flex items-center justify-center hover:bg-blue-100 transition" title="Fungua Ramani">
+                  <i class="fa-solid fa-map-location-dot text-sm"></i>
+                </a>
+                <a href="tel:${c.phone}" class="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl border border-emerald-100 inline-flex items-center justify-center hover:bg-emerald-100 transition">
+                  <i class="fa-solid fa-paper-plane text-sm"></i>
+                </a>
+                <button onclick="deleteCustomer('${c.id}')" class="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition" title="Futa Mteja">
+                  <i class="fa-solid fa-trash text-sm"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function renderUI() {
+      // Sale Selection Options
+      saleSelectProduct.innerHTML = '<option value="">-- Chagua Bidhaa --</option>';
+      const prodArray = Object.values(products);
+      prodArray.forEach(p => {
+        if (p.remainingPieces > 0) {
+          saleSelectProduct.innerHTML += `<option value="${p.id}">${p.name} (Zimebaki: ${p.remainingPieces})</option>`;
+        }
+      });
+
+      // Stock List
+      stockList.innerHTML = '';
+      if (prodArray.length === 0) {
+        stockList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Hakuna bidhaa zilizosajiliwa bado.</p>';
+      } else {
+        prodArray.forEach(p => {
+          const isFinished = p.remainingPieces === 0;
+          stockList.innerHTML += `
+            <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+              <div>
+                <p class="font-bold text-sm text-gray-800">${p.name}</p>
+                <p class="text-[11px] text-gray-400">Bei/Kipande: TSh ${p.sellingPrice.toLocaleString()}</p>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full ${isFinished ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">
+                  ${isFinished ? 'UMEISHA' : p.remainingPieces + ' Zimebaki'}
+                </span>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      // Orders List
+      ordersList.innerHTML = '';
+      const orderArray = Object.values(orders);
+      pendingOrdersBannerText.innerText = `${orderArray.length} Oda hazijachukuliwa`;
+      if (orderArray.length === 0) {
+        ordersList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Hakuna oda zinazokusubiri.</p>';
+      } else {
+        orderArray.forEach(o => {
+          const mapUrl = o.coords ? `https://www.google.com/maps?q=${o.coords}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.location)}`;
+          const displayPhone = (o.customerPhone && o.customerPhone !== '0') ? `<p class="text-xs text-blue-600 font-semibold">📞 <a href="tel:${o.customerPhone}" class="underline">${o.customerPhone}</a></p>` : `<p class="text-xs text-gray-400 italic">📞 Hana Namba ya Simu</p>`;
+
+          ordersList.innerHTML += `
+            <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="font-bold text-sm text-gray-800">${o.customerName}</span>
+                  <a href="${mapUrl}" target="_blank" class="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md ml-1 inline-flex items-center gap-1">
+                    📍 ${o.location} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                  </a>
+                </div>
+                <button onclick="completeOrder('${o.id}')" class="text-xs bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg shadow">
+                  Kamilisha Oda
+                </button>
+              </div>
+              ${displayPhone}
+              <p class="text-xs text-gray-600">📦 ${o.details}</p>
+              <p class="text-[10px] text-gray-400">📅 Tarehe: ${o.date}</p>
+            </div>
+          `;
+        });
+      }
+
+      // Ideas List
+      ideasList.innerHTML = '';
+      const ideaArray = Object.values(ideas);
+      if (ideaArray.length === 0) {
+        ideasList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Bado hujaweka wazo au kumbukumbu yoyote.</p>';
+      } else {
+        ideaArray.forEach(item => {
+          ideasList.innerHTML += `
+            <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-sm space-y-1.5 relative">
+              <div class="flex justify-between items-start">
+                <h4 class="font-bold text-sm text-gray-800 pr-6">${item.title}</h4>
+                <button onclick="deleteIdea('${item.id}')" class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 font-semibold px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition flex items-center gap-1">
+                  <i class="fa-solid fa-check"></i> Nimeshanunua / Futa
+                </button>
+              </div>
+              ${item.cost ? `<p class="text-xs font-bold text-indigo-600">Makadirio: TSh ${item.cost.toLocaleString()}</p>` : ''}
+              ${item.details ? `<p class="text-xs text-gray-600">${item.details}</p>` : ''}
+              <p class="text-[10px] text-gray-400 pt-1">📅 Imerekodiwa: ${item.date}</p>
+            </div>
+          `;
+        });
+      }
+
+      renderCustomersList(Object.values(customers));
+
+      // Sales Table & Summary Calculation
+      salesTableBody.innerHTML = '';
+      let calcTotalRev = 0, calcTotalCap = 0, calcTotalProf = 0;
+      let todayRev = 0, todayProf = 0;
+      let salesByDate = {};
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const salesArray = Object.values(sales);
+      salesArray.forEach(s => {
+        calcTotalRev += s.revenue;
+        calcTotalCap += s.capital;
+        calcTotalProf += s.profit;
+
+        if (s.date === todayStr) {
+          todayRev += s.revenue;
+          todayProf += s.profit;
+        }
+
+        salesByDate[s.date] = (salesByDate[s.date] || 0) + s.revenue;
+
+        salesTableBody.innerHTML += `
+          <tr class="hover:bg-gray-50">
+            <td class="p-3 font-medium text-gray-500">${s.date}</td>
+            <td class="p-3 font-semibold text-gray-800">${s.productName}</td>
+            <td class="p-3">${s.qty}</td>
+            <td class="p-3 font-bold text-emerald-600">TSh ${s.revenue.toLocaleString()}</td>
+            <td class="p-3 font-bold text-emerald-700">TSh ${s.profit.toLocaleString()}</td>
+          </tr>
+        `;
+      });
+
+      homeRevenueText.innerText = `TSh ${todayRev.toLocaleString()}`;
+      homeProfitText.innerText = `TSh ${todayProf.toLocaleString()}`;
+
+      totalRevenueEl.innerText = `TSh ${calcTotalRev.toLocaleString()}`;
+      totalCapitalEl.innerText = `TSh ${calcTotalCap.toLocaleString()}`;
+      totalProfitEl.innerText = `TSh ${calcTotalProf.toLocaleString()}`;
+
+      if (salesChart) {
+        salesChart.data.labels = Object.keys(salesByDate);
+        salesChart.data.datasets[0].data = Object.values(salesByDate);
+        salesChart.update();
+      }
+    }
+
+    window.onload = () => {
+      initChart();
+      fetchDataFromSupabase();
+    };
+  </script>
+</body>
+</html>
